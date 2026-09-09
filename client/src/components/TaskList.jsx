@@ -5,9 +5,11 @@ import AssignUser from './AssignUser';
 function TaskList({ session }) {
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState('');
+  const [dueDate, setDueDate] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [editDueDate, setEditDueDate] = useState('');
 
   useEffect(() => {
     fetchTasks();
@@ -28,7 +30,11 @@ function TaskList({ session }) {
 
     const { data, error } = await supabase
       .from('tasks')
-      .insert({ title, created_by: session.user.id })
+      .insert({
+        title,
+        due_date: dueDate || null,
+        created_by: session.user.id,
+      })
       .select()
       .single();
 
@@ -37,6 +43,7 @@ function TaskList({ session }) {
     } else {
       setTasks([data, ...tasks]);
       setTitle('');
+      setDueDate('');
     }
   };
 
@@ -66,6 +73,7 @@ function TaskList({ session }) {
     setEditingId(task.id);
     setEditTitle(task.title);
     setEditDescription(task.description || '');
+    setEditDueDate(task.due_date || '');
   };
 
   const cancelEditing = () => {
@@ -75,7 +83,11 @@ function TaskList({ session }) {
   const saveEdit = async (id) => {
     const { data, error } = await supabase
       .from('tasks')
-      .update({ title: editTitle, description: editDescription })
+      .update({
+        title: editTitle,
+        description: editDescription,
+        due_date: editDueDate || null,
+      })
       .eq('id', id)
       .select()
       .single();
@@ -99,6 +111,11 @@ function TaskList({ session }) {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Nueva tarea..."
         />
+        <input
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+        />
         <button type="submit">Añadir</button>
       </form>
 
@@ -118,6 +135,11 @@ function TaskList({ session }) {
                   onChange={(e) => setEditDescription(e.target.value)}
                   placeholder="Descripción..."
                 />
+                <input
+                  type="date"
+                  value={editDueDate}
+                  onChange={(e) => setEditDueDate(e.target.value)}
+                />
                 <button onClick={() => saveEdit(task.id)}>Guardar</button>
                 <button onClick={cancelEditing}>Cancelar</button>
               </div>
@@ -129,6 +151,7 @@ function TaskList({ session }) {
                 >
                   {task.title}
                 </span>
+                {task.due_date && <span> 📅 {task.due_date}</span>}
                 {task.description && <p>{task.description}</p>}
                 <button onClick={() => startEditing(task)}>✏️</button>
                 {task.created_by === session.user.id && (
